@@ -12,19 +12,19 @@ pipeline {
         }
         stage('Build') {
             steps {
-                sh "mvn clean package -DskipTests"
+                bat "mvn clean package -DskipTests"
             }
         }
         stage('Pre-deploy') {
             steps {
-                sh "docker rm -f auth-cntr || true"
-                sh "docker rmi -f auth-img || true"
+                bat "docker rm -f auth-cntr || true"
+                bat "docker rmi -f auth-img || true"
             }
         }
         stage('Deploy') {
             steps {
-                sh "docker build -t auth-img ."
-                sh "docker run -p 8090:8090 -d --name auth-cntr auth-img"
+                bat "docker build -t auth-img ."
+                bat "docker run -p 8090:8090 -d --name auth-cntr auth-img"
             }
         }
     }
