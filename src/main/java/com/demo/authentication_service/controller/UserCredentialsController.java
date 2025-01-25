@@ -1,9 +1,12 @@
 package com.demo.authentication_service.controller;
 
 import com.demo.authentication_service.dao.entity.UserCredentialsEntity;
+import com.demo.authentication_service.dao.entity.Role;
 import com.demo.authentication_service.service.JwtService;
 import com.demo.authentication_service.service.UserCredentialsService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -27,13 +30,53 @@ public class UserCredentialsController {
     public boolean validateToken(@RequestParam String token) {
         return userCredService.verifyToken(token);
     }
-    @PostMapping("/validate/user")
-    public String getToken(@RequestBody UserCredentialsEntity user) {
-        Authentication authenticate = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(user.getName(), user.getPassword()));
-        if(authenticate.isAuthenticated()) {
-            return userCredService.generateToken(user.getName());
+    @PostMapping("/login/user")
+    public ResponseEntity<?> userLogin(@RequestBody UserCredentialsEntity user) {
+        try {
+            Authentication authenticate = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword())
+            );
+
+            if (authenticate.isAuthenticated()) {
+                UserCredentialsEntity userDetails = userCredService.findByName(user.getName());
+                if (!hasRole(userDetails, Role.ERole.ROLE_USER)) {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                            .body("Access denied: User role required");
+                }
+                return ResponseEntity.ok(userCredService.generateToken(user.getUsername()));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid credentials");
         }
-        return null;
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+
+    @PostMapping("/login/admin")
+    public ResponseEntity<?> adminLogin(@RequestBody UserCredentialsEntity user) {
+        try {
+            Authentication authenticate = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword())
+            );
+
+            if (authenticate.isAuthenticated()) {
+                UserCredentialsEntity userDetails = userCredService.findByName(user.getName());
+                if (!hasRole(userDetails, Role.ERole.ROLE_ADMIN)) {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                            .body("Access denied: Admin role required");
+                }
+                return ResponseEntity.ok(userCredService.generateToken(user.getUsername()));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid credentials");
+        }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+
+    private boolean hasRole(UserCredentialsEntity user, Role.ERole roleName) {
+        return user.getRoles().stream()
+                .anyMatch(role -> role.getName() == roleName);
     }
 }
 

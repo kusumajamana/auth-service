@@ -8,10 +8,10 @@ import java.util.Collection;
 
 public class CustomUserDetails implements UserDetails {
 
-    private String name;
+    private String username;
     private String password;
     public CustomUserDetails(UserCredentialsEntity user) {
-        this.name = user.getName();
+        this.username = user.getUsername();
         this.password = user.getPassword();
     }
 
@@ -27,7 +27,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public String getUsername() {
-        return name;
+        return username;
     }
 }
 
